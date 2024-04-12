@@ -492,7 +492,7 @@ def cut2(inp):
 
 def cut3(inp):
     inp = inp.strip("\n")
-    return "\n".join(["%s" % item for item in inp.strip("。").split("。")])
+    return "\n".join(["%s" % item for item in inp.strip(['?','!','。','？','！']).split(['?','!','。','？','！'])])
 
 
 def cut4(inp):
