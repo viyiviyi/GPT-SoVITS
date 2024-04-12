@@ -15,3 +15,5 @@ PortableGit
 
 ffmpeg.exe
 ffprobe.exe
+input/
+venv/
