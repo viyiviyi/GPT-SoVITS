@@ -25,7 +25,7 @@ class TTS_Task:
         self.ssml: str = ""
 
         self.text: str = ""
-        self.variation: str = None
+        self.variation: str = ''
         
         self.emotion: str = params_config["emotion"]["default"] if other_task is None else other_task.emotion
         self.text_language: str = params_config["text_language"]["default"] if other_task is None else other_task.text_language
