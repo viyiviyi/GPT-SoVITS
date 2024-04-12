@@ -6,7 +6,7 @@
     "half_precision": "auto",
     "device": "auto",
     "batch_size": 10,
-    "max_word_count": 100,
+    "max_word_count": 600,
     "max_text_length": -1,
     "is_share": "false",
 

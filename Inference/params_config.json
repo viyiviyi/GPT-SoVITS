@@ -51,7 +51,7 @@
         "type": "int",
         "description": "Batch size for processing.",
         "alias": ["batch_size", "batch"],
-        "default": 10
+        "default": 20
     },
     "speed": {
         "type": "float",
@@ -69,13 +69,13 @@
         "type": "float",
         "description": "Top P parameter for sampling.",
         "alias": ["top_p", "topp"],
-        "default": 0.8
+        "default": 1
     },
     "temperature": {
         "type": "float",
         "description": "Temperature for sampling.",
         "alias": ["temperature"],
-        "default": 0.8
+        "default": 1
     },
     "seed": {
         "type": "int",
@@ -93,19 +93,19 @@
         "type": "bool",
         "description": "Save the output temporarily.",
         "alias": ["save_temp", "save"],
-        "default": false
+        "default": true
     },
     "cut_method": {
         "type": "string",
         "description": "Method for text cutting.",
         "alias": ["cut_method", "cut"],
-        "default": "auto_cut_100"
+        "default": "cut3"
     },
     "format": {
         "type": "string",
         "description": "Format of the output audio.",
         "alias": ["format"],
-        "default": "wav"
+        "default": "mp3"
     },
     "loudness": {
         "type": "float",
