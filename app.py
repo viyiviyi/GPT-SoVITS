@@ -363,7 +363,7 @@ with gr.Blocks() as app:
                     
    
                     with gr.Group():
-                        top_k = gr.Slider(minimum=1, maximum=30, value=3, label=i18n("Top K"), step=1)
+                        top_k = gr.Slider(minimum=1, maximum=30, value=1, label=i18n("Top K"), step=1)
                         top_p = gr.Slider(minimum=0, maximum=1, value=0.8, label=i18n("Top P"))
                         temperature = gr.Slider(
                             minimum=0, maximum=1, value=0.8, label=i18n("Temperature")

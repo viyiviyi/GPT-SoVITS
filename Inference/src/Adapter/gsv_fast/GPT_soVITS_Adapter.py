@@ -3,7 +3,7 @@ import os, json, sys
 import threading
 
 from Inference.src.TTS_Task import TTS_Task
-from Inference.src.ssml_dealer import SSML_Dealer
+from .ssml_dealer import SSML_Dealer
 
 import hashlib  
 
@@ -12,7 +12,6 @@ sys.path.append(now_dir)
 # sys.path.append(os.path.join(now_dir, "GPT_SoVITS"))
 
 from Inference.src.config_manager import load_infer_config, auto_generate_infer_config, inference_config, get_device_info, get_deflaut_character_name, params_config, update_character_info
-models_path = inference_config.models_path
 disabled_features = inference_config.disabled_features
 
 dict_language = {
@@ -34,15 +33,19 @@ from GPT_SoVITS.TTS_infer_pack.TTS import TTS, TTS_Config
 
 
 class GSV_Instance:
-    def __init__(self, character_name = None):
+    def __init__(self, models_path=None, default_character=None, **kwargs):
         tts_config = TTS_Config("")
         tts_config.device , tts_config.is_half = get_device_info()
         self.tts_pipline = TTS(tts_config)
-        if character_name is None:
-            character_name = get_deflaut_character_name()
+        self.models_path = models_path if models_path is not None else inference_config.models_path
+        if default_character is not None:
+            character = default_character
+            self.default_character = default_character
+        else:
+            character = get_deflaut_character_name(self.models_path)
         self.character = None
         self.lock = threading.Lock()
-        self.load_character(character_name)
+        self.load_character(character)
 
     def inference(self, text, text_language, 
               ref_audio_path, prompt_text, 
@@ -100,16 +103,16 @@ class GSV_Instance:
 
     def load_character(self, character):
         if character in ["", None] and self.character in ["", None]:
-            character = get_deflaut_character_name()
+            character = get_deflaut_character_name(self.models_path)
         if self.character not in ["", None]:
             if type(character) != str:
                 raise Exception(f"The type of character name should be str, but got {type(character)}")
             if self.character.lower() == character.lower():
                 return
-        character_path=os.path.join(models_path, character)
+        character_path=os.path.join(self.models_path, character)
         if not os.path.exists(character_path):
             print(f"找不到角色文件夹: {character}，已自动切换到默认角色")
-            character = get_deflaut_character_name()
+            character = get_deflaut_character_name(self.models_path)
             return self.load_character(character)
             # raise Exception(f"Can't find character folder: {character}")
         try:
@@ -149,6 +152,12 @@ class GSV_Instance:
     def generate_from_ssml(self, task: TTS_Task):
         dealer = SSML_Dealer()
         return dealer.generate_from_ssml(task.ssml, self)
+    
+    def generate(self, task: TTS_Task):
+        if task.task_type == "text":
+            return self.generate_from_text(task)
+        elif task.task_type == "ssml":
+            return self.generate_from_ssml(task)
 
     def get_wav_from_text_api(
         self,
@@ -169,7 +178,7 @@ class GSV_Instance:
         text = text.replace("\r", "\n").replace("<br>", "\n").replace("\t", " ")
         text = text.replace("……","。").replace("…","。").replace("\n\n","\n").replace("。\n","\n").replace("\n", "。\n")
         # 加载环境配置
-        config: dict = load_infer_config(os.path.join(models_path, self.character))
+        config: dict = load_infer_config(os.path.join(self.models_path, self.character))
 
         # 尝试从配置中提取参数，如果找不到则设置为None
         relative_path: str = None
@@ -178,7 +187,7 @@ class GSV_Instance:
         prompt_language: str = None
         if character_emotion == "auto":
             # 如果是auto模式，那么就自动决定情感
-            ref_wav_path, prompt_text, prompt_language = self.match_character_emotion(os.path.join(models_path, self.character))
+            ref_wav_path, prompt_text, prompt_language = self.match_character_emotion(os.path.join(self.models_path, self.character))
         if ref_wav_path is None:
             # 未能通过auto匹配到情感，就尝试使用指定的情绪列表
             emotion_list:dict=config.get('emotion_list', None)# 这是新版的infer_config文件，如果出现错误请删除infer_config.json文件，让系统自动生成 
@@ -191,7 +200,7 @@ class GSV_Instance:
             for emotion, details in emotion_list.items():
                 if emotion==now_emotion:
                     relative_path = details['ref_wav_path']
-                    ref_wav_path = os.path.join(os.path.join(models_path,self.character), relative_path)
+                    ref_wav_path = os.path.join(os.path.join(self.models_path,self.character), relative_path)
                     prompt_text = details['prompt_text']
                     prompt_language = details['prompt_language']
                     break
@@ -206,7 +215,7 @@ class GSV_Instance:
             md5.update(prompt_text.encode())
             md5.update(prompt_language.encode())
             short_md5 = md5.hexdigest()[:8]
-            prompt_cache_path = os.path.join(models_path, self.character, f"prompt_cache/prompt_cache_{short_md5}.pickle")
+            prompt_cache_path = f"cache/prompt_cache/prompt_cache_{short_md5}.pickle"
 
         try:
             text_language = dict_language[text_language]

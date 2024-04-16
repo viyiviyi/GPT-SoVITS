@@ -380,6 +380,7 @@ class TTS:
         # self.refer_spec = spec
         self.prompt_cache["refer_spec"] = spec
         
+        
     def _set_prompt_semantic(self, ref_wav_path:str):
         zero_wav = np.zeros(
             int(self.configs.sampling_rate * 0.3),
@@ -517,16 +518,16 @@ class TTS:
             all_bert_features_batch = all_bert_features_list
             
             
-            # max_len = max(bert_max_len, phones_max_len)
+            max_len = max(bert_max_len, phones_max_len)
             # phones_batch = self.batch_sequences(phones_list, axis=0, pad_value=0, max_length=max_len)
-            #### 直接对phones和bert_features进行pad，会增大复读概率。
-            # all_phones_batch = self.batch_sequences(all_phones_list, axis=0, pad_value=0, max_length=max_len)
-            # all_bert_features_batch = all_bert_features_list
-            # all_bert_features_batch = torch.zeros(len(item_list), 1024, max_len, dtype=precision, device=device)
-            # for idx, item in enumerate(all_bert_features_list):
-            #     all_bert_features_batch[idx, :, : item.shape[-1]] = item
+            #### 直接对phones和bert_features进行pad。（padding策略会影响T2S模型生成的结果，但不直接影响复读概率。影响复读概率的主要因素是mask的策略）
+            all_phones_batch = self.batch_sequences(all_phones_list, axis=0, pad_value=0, max_length=max_len)
+            all_bert_features_batch = all_bert_features_list
+            all_bert_features_batch = torch.zeros(len(item_list), 1024, max_len, dtype=precision, device=device)
+            for idx, item in enumerate(all_bert_features_list):
+                all_bert_features_batch[idx, :, : item.shape[-1]] = item
             
-            # #### 先对phones进行embedding、对bert_features进行project，再pad到相同长度，以缓解复读问题。（可能还有其他因素导致复读）
+            # #### 先对phones进行embedding、对bert_features进行project，再pad到相同长度，（padding策略会影响T2S模型生成的结果，但不直接影响复读概率。影响复读概率的主要因素是mask的策略）
             # all_phones_list = [self.t2s_model.model.ar_text_embedding(item.to(self.t2s_model.device)) for item in all_phones_list]
             # all_phones_list = [F.pad(item,(0,0,0,max_len-item.shape[0]),value=0) for item in all_phones_list]
             # all_phones_batch = torch.stack(all_phones_list, dim=0)
@@ -571,9 +572,6 @@ class TTS:
         '''
         self.stop_flag = True
     
-
-        
-    
     # 使用装饰器
     @torch.no_grad()
     def run(self, inputs:dict):
@@ -609,6 +607,7 @@ class TTS:
         text_lang:str = inputs.get("text_lang", "")
         
         prompt_cache_path:str = inputs.get("prompt_cache_path", "")
+        test_mode:bool = inputs.get("test_mode", False)
         
         ref_audio_path:str = inputs.get("ref_audio_path", "")
         prompt_text:str = inputs.get("prompt_text", "")
@@ -662,9 +661,11 @@ class TTS:
                     self.prompt_cache = pickle.load(f)
                 print(i18n("参考音频缓存已加载"))
                 self.prompt_cache_path = prompt_cache_path
-        else:
+        elif not test_mode:
+            # when in test mode, the prompt_cache should be set manually.
             if (ref_audio_path is not None) and (ref_audio_path != self.prompt_cache["ref_audio_path"]):
                 self.set_ref_audio(ref_audio_path)
+                self.prompt_cache["ref_audio_path"] = ref_audio_path
 
             if not no_prompt_text:
                 prompt_text = prompt_text.strip("\n")
@@ -686,6 +687,7 @@ class TTS:
                 with open(prompt_cache_path, "wb") as f:
                     pickle.dump(self.prompt_cache, f)
                 print(i18n("参考音频缓存已保存"))
+                self.prompt_cache_path = prompt_cache_path
 
         ###### text preprocessing ########
         t1 = ttime()
@@ -757,17 +759,18 @@ class TTS:
                         continue
 
                 batch_phones:List[torch.LongTensor] = item["phones"]
+                # batch_phones:torch.LongTensor = item["phones"]
                 batch_phones_len:torch.LongTensor = item["phones_len"]
-                all_phoneme_ids:List[torch.LongTensor] = item["all_phones"]
+                all_phoneme_ids:torch.LongTensor = item["all_phones"]
                 all_phoneme_lens:torch.LongTensor  = item["all_phones_len"]
-                all_bert_features:List[torch.LongTensor] = item["all_bert_features"]
+                all_bert_features:torch.LongTensor = item["all_bert_features"]
                 norm_text:str = item["norm_text"]
 
                 print(i18n("前端处理后的文本(每句):"), norm_text)
                 if no_prompt_text :
                     prompt = None
                 else:
-                    prompt = self.prompt_cache["prompt_semantic"].expand(len(all_phoneme_ids), -1).to(self.configs.device)
+                    prompt = self.prompt_cache["prompt_semantic"].expand(all_phoneme_ids.shape[0], -1).to(self.configs.device)
 
 
                 pred_semantic_list, idx_list = self.t2s_model.model.infer_panel(

@@ -7,7 +7,6 @@ import urllib.parse
 import hashlib
 
 from Inference.src.config_manager import inference_config,  params_config
-models_path = inference_config.models_path
 disabled_features = inference_config.disabled_features
 
 
