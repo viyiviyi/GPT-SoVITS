@@ -51,7 +51,7 @@
         "type": "int",
         "description": "Batch size for processing.",
         "alias": ["batch_size", "batch"],
-        "default": 20
+        "default": 10
     },
     "speed": {
         "type": "float",
@@ -63,7 +63,7 @@
         "type": "int",
         "description": "Top K parameter for sampling.",
         "alias": ["top_k", "topk"],
-        "default": 10
+        "default": 5
     },
     "top_p": {
         "type": "float",
@@ -99,7 +99,7 @@
         "type": "string",
         "description": "Method for text cutting.",
         "alias": ["cut_method", "cut"],
-        "default": "cut3"
+        "default": "cut0"
     },
     "format": {
         "type": "string",
