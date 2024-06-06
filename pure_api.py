@@ -2,6 +2,8 @@
 import os, sys
 import importlib
 
+from asyncio_cache import AsyncioCache
+
 now_dir = os.getcwd()
 sys.path.append(now_dir)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -14,6 +16,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import tempfile
 import uvicorn  
 import json
+
+asyncio_cache = AsyncioCache(max_size=100)
 
 # 将当前文件所在的目录添加到 sys.path
 from Synthesizers.base import Base_TTS_Task, Base_TTS_Synthesizer
@@ -58,7 +62,7 @@ async def tts(request: Request):
         else:
             # 假设 gen 是你的音频生成器
             try:
-                save_path = tts_synthesizer.generate(task, return_type="filepath")
+                save_path = await asyncio_cache.add(md5_value, lambda : tts_synthesizer.generate(task, return_type='filepath'),no_cache=not task.save_temp)
             except Exception as e:
                 return HTTPException(status_code=500, detail=str(e))
             if task.save_temp:
@@ -83,7 +87,7 @@ if __name__ == "__main__":
     synthesizer_module = import_module(f"Synthesizers.{synthesizer_name}")
     TTS_Synthesizer = synthesizer_module.TTS_Synthesizer
     TTS_Task = synthesizer_module.TTS_Task
-    tts_synthesizer = TTS_Synthesizer(debug_mode=True)
+    tts_synthesizer = TTS_Synthesizer(debug_mode=False)
     print(f"Backend Version: {__version__}")
     tts_host = api_config.tts_host
     tts_port = api_config.tts_port

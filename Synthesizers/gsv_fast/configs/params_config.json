@@ -182,7 +182,7 @@
         "label": "输出格式",
         "description": "Format of the output audio.",
         "alias": ["format"],
-        "default": "wav"
+        "default": "mp3"
     },
     "loudness": {
         "type": "float",

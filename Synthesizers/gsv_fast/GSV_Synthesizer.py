@@ -273,7 +273,7 @@ class GSV_Synthesizer(Base_TTS_Synthesizer):
     ):
 
         text = text.replace("\r", "\n").replace("<br>", "\n").replace("\t", " ")
-        text = text.replace("……","。").replace("…","。").replace("\n\n","\n").replace("。\n","\n").replace("\n", "。\n")
+        # text = text.replace("……","。").replace("…","。").replace("\n\n","\n").replace("。\n","\n").replace("\n", "。\n")
         
         assert os.path.exists(ref_audio_path), f"找不到参考音频文件: {ref_audio_path}"
         prompt_cache_path = ""
