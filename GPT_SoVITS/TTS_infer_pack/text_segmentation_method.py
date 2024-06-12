@@ -154,16 +154,15 @@ def cut2(inp, max_length=50):
 @register_method("cut3")
 def cut3(inp):
     inp = split_long_sentence(inp).strip("\n")
-    # return "\n".join(["%s" % item for item in inp.strip("。").split("。")])
-    return inp.replace('。', '。\n').replace('？', '？\n').replace('！', '！\n').strip('\n')
-
+    return "\n".join(["%s" % item for item in inp.strip("。").split("。")])
+    # return inp.replace('。', '。\n').replace('？', '？\n').replace('！', '！\n').strip('\n').strip("。").replace(r'^[,.;?!、，。？！；：:…]+','')
 
 # 按英文句号.切
 @register_method("cut4")
 def cut4(inp):
     inp = inp.strip("\n")
-    # return "\n".join(["%s" % item for item in inp.strip(".").split(".")])
-    return inp.replace('.', '.\n').replace('?', '?\n').replace('!', '!\n').strip('\n')
+    return "\n".join(["%s" % item for item in inp.strip(".").split(".")])
+    # return inp.replace('.', '.\n').replace('?', '?\n').replace('!', '!\n').strip('\n').replace(r'^[,.;?!、，。？！；：:…]*','')
 
 # 按标点符号切
 # contributed by https://github.com/AI-Hobbyist/GPT-SoVITS/blob/main/GPT_SoVITS/inference_webui.py
